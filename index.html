@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FuwaGotchi: 宇宙流放寵物機</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=DotGothic16&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Pixel font styling */
+        .pixel-font {
+            font-family: 'DotGothic16', monospace;
+            text-shadow: 1px 1px #000;
+        }
+        /* Custom retro button style */
+        .retro-button {
+            transition: all 0.1s;
+            box-shadow: 2px 2px 0 0 #4a5568;
+        }
+        .retro-button:hover {
+            box-shadow: 4px 4px 0 0 #4a5568;
+            transform: translate(-1px, -1px);
+        }
+        .retro-button:active {
+            box-shadow: 1px 1px 0 0 #4a5568;
+            transform: translate(1px, 1px);
+        }
+        /* Pixel border for main screen */
+        .pixel-screen {
+            border: 4px solid #1a202c;
+            box-shadow: inset 0 0 0 2px #4a5568, 5px 5px 0 0 #000;
+        }
+        /* Style for the pet display (using a fixed-width container for pixel-like appearance) */
+        .pet-display {
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 6rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-800 text-white min-h-screen p-4 flex items-center justify-center font-inter">
+
+    <div class="w-full max-w-4xl bg-gray-900 p-6 rounded-xl shadow-2xl">
+        <h1 class="text-3xl font-bold text-yellow-400 mb-4 text-center pixel-font">🌌 FuwaGotchi: 宇宙流放養成機 🍩</h1>
+        <p id="game-status" class="text-xs text-center text-gray-400 mb-4">正在連接數據庫...</p>
+        
+        <div class="grid md:grid-cols-3 gap-6">
+            
+            <!-- A. 養成主螢幕 (Pet Screen) -->
+            <div id="pet-screen" class="md:col-span-2 bg-gray-700 p-4 rounded-lg pixel-screen">
+                <div class="flex justify-between items-center mb-4">
+                    <p id="current-time-slot" class="text-lg text-yellow-300 pixel-font">🕛 早上時段</p>
+                    <button onclick="nextDay()" class="retro-button bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm">新的一天 ☀️</button>
+                </div>
+                
+                <!-- Pet Display -->
+                <div class="pet-display bg-gray-600 rounded-lg mb-4 p-4 flex-col">
+                    <div id="pet-avatar" class="text-9xl mb-2"></div>
+                    <p id="pet-dialogue" class="text-lg text-green-300 text-center pixel-font">（寵物對話）</p>
+                    <div id="donut-countdown" class="text-red-400 text-sm mt-2 pixel-font hidden"></div>
+                </div>
+
+                <!-- Pet Stats -->
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                    <p>美貌: <span id="stat-beauty" class="text-purple-300">0</span></p>
+                    <p>表演力: <span id="stat-performance" class="text-pink-300">0</span></p>
+                    <p>遊戲力: <span id="stat-gaming" class="text-blue-300">0</span></p>
+                    <p>知識: <span id="stat-knowledge" class="text-yellow-300">0</span></p>
+                    <p>適應力: <span id="stat-adaptation" class="text-teal-300">0</span></p>
+                    <p>飽足度: <span id="stat-satiety" class="text-red-400">100</span>%</p>
+                </div>
+            </div>
+            
+            <!-- B. 行動與衣裝 (Actions & Clothes) -->
+            <div class="md:col-span-1 space-y-4">
+                <!-- Actions -->
+                <div class="bg-gray-700 p-4 rounded-lg pixel-screen">
+                    <h2 class="text-xl text-yellow-400 mb-3 pixel-font">🕹️ 行動 (一天三次)</h2>
+                    <div id="action-buttons" class="grid grid-cols-2 gap-2">
+                        <!-- Buttons will be populated by JS -->
+                    </div>
+                    <button onclick="nextTimeSlot()" id="next-time-button" class="retro-button bg-green-500 hover:bg-green-600 text-white w-full mt-3 py-2 rounded-md">
+                        下一時段
+                    </button>
+                </div>
+
+                <!-- Clothes -->
+                <div class="bg-gray-700 p-4 rounded-lg pixel-screen">
+                    <h2 class="text-xl text-yellow-400 mb-3 pixel-font">👗 服裝加成</h2>
+                    <select id="clothing-select" onchange="changeClothing(this.value)" class="w-full p-2 bg-gray-600 text-white rounded-md pixel-font retro-button">
+                        <!-- Options will be populated by JS -->
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <!-- C. 流放與宇宙區 (Exile & Cosmic Drift) -->
+        <div class="mt-6 p-4 bg-gray-700 rounded-lg pixel-screen flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <button onclick="exilePet()" id="exile-button" class="retro-button bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-md font-bold disabled:opacity-50" disabled>
+                    🚀 流放至宇宙
+                </button>
+                <p class="text-lg pixel-font">
+                    宇宙區漂浮總數: 
+                    <span id="exile-count" class="text-yellow-300 text-2xl">0</span> 隻
+                </p>
+            </div>
+            <p class="text-sm text-gray-400">
+                <span class="text-pink-300">宇宙漂浮區：</span>記錄你曾經流放的甜甜圈化或失敗的Fuwa。
+            </p>
+        </div>
+        
+        <p class="mt-4 text-xs text-center text-gray-500">
+            <span class="font-bold">FuwaGotchi Demo</span>：數值浮動，養成結果不可控。請記住定時餵食！
+        </p>
+
+    </div>
+
+    <!-- Modal for Messages/Endings -->
+    <div id="modal" class="fixed inset-0 bg-gray-900 bg-opacity-90 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-gray-800 p-6 rounded-lg pixel-screen max-w-md w-full text-center border-4 border-yellow-400">
+            <h3 id="modal-title" class="text-3xl font-bold mb-4 text-yellow-400 pixel-font">事件發生！</h3>
+            <p id="modal-message" class="text-lg text-white mb-6 pixel-font"></p>
+            <button onclick="closeModal()" class="retro-button bg-yellow-500 hover:bg-yellow-600 text-gray-900 px-6 py-2 rounded-md font-bold pixel-font">
+                確認
+            </button>
+        </div>
+    </div>
+
+
+<script type="module">
+    // --- Firebase SDKs and Initialization (Merged from head script) ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    setLogLevel('Debug');
+
+    // Global variables provided by the environment
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+    let app, db, auth, userId = null;
+    let isAuthReady = false;
+
+    window.firebaseInit = async () => {
+        if (!firebaseConfig) {
+            console.error("Firebase configuration is missing. Cannot initialize Firestore.");
+            document.getElementById('game-status').textContent = '⚠️ 數據庫無法初始化。';
+            // Fallback to in-memory state if Firebase is mandatory but unavailable
+            window.isAuthReady = true; 
+            window.userId = 'demo-user';
+            window.db = null;
+            return;
+        }
+
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            window.db = db; // Make db accessible globally
+            window.auth = auth;
+
+            // Handle authentication
+            if (initialAuthToken) {
+                await signInWithCustomToken(auth, initialAuthToken);
+            } else {
+                await signInAnonymously(auth);
+            }
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    userId = user.uid;
+                    window.userId = userId; // Make userId accessible globally
+                    isAuthReady = true;
+                    window.isAuthReady = true;
+                    document.getElementById('game-status').textContent = `✅ 身份驗證完成。用戶ID: ${userId}`;
+                    // Start game logic dependent on auth
+                    window.loadGameState();
+                } else {
+                    // Use a fallback random ID for unauthenticated access if needed, but we signed in anonymously above.
+                    userId = crypto.randomUUID();
+                    window.userId = userId;
+                    isAuthReady = true;
+                    window.isAuthReady = true;
+                    document.getElementById('game-status').textContent = `✅ 匿名登入完成。用戶ID: ${userId}`;
+                    window.loadGameState();
+                }
+            });
+
+        } catch (error) {
+            console.error("Firebase initialization or sign-in failed:", error);
+            document.getElementById('game-status').textContent = `❌ 登入失敗: ${error.message}`;
+        }
+    };
+    
+    // Call initialization function
+    window.firebaseInit();
+
+
+    // --- Game Configuration ---
+    const TIME_SLOTS = ["早上時段", "中午時段", "晚上時段"];
+    const MAX_SATIETY = 100;
+    const MAX_DAYS_TO_DONUT = 3; // N days after Satiety hits 0
+
+    const STAT_NAMES = ["beauty", "performance", "gaming", "knowledge", "adaptation"];
+
+    // Pet Dialogue
+    const DIALOGUE = {
+        // General actions
+        feed: ["謝謝你！肚子飽飽，又要努力了。", "今天的食物是宇宙級美味！"],
+        wash: ["洗澡洗澡~ 讓自己香香的去營業！", "美貌值up！"],
+        exercise: ["哈啊！今天的運動量還不夠！", "為了舞台，要練舞！"],
+        game: ["喔喔喔！這場一定能贏！", "深夜打遊戲最棒了~"],
+        study: ["知識就是力量，努力成為博學擔當！", "閱讀時間，適應力up！"],
+        sleep: ["晚安啦，明天見。晚睡可是美容的大敵！", "睡覺是為了更長久的配信！"],
+        // Status
+        low_satiety: ["肚子…有點餓了呢，可以吃東西了嗎？", "好想吃甜甜圈…"],
+        starving: ["（虛弱）再不吃東西…可能要變甜甜圈了…"],
+        exiled: ["Bye Bye, My Friend! (進入宇宙漂浮)"],
+        new_day: ["新的一天，從早安開始！", "早上好！今天要幹嘛呢？"],
+        ending_success: ["恭喜！你成功養出了獨一無二的Fuwa！"],
+        ending_fail: ["雖然很努力，但養成結果不太理想呢…"],
+        donut: ["🍩 變成甜甜圈了！但…還能被流放喔？"],
+    };
+
+    // Clothing Configuration: [ActionKey]: MaxBoostValue
+    const CLOTHING_CONFIG = {
+        'Suit': { label: '👔 西裝 (Suit)', boosts: { wash: 4, study: 2, default: 1 } },
+        'ROF_MAO': { label: '🎤 ROF-MAO 衣裝', boosts: { wash: 3, performance: 3, adaptation: 3, default: 1 } },
+        'Gaming': { label: '🎮 Gaming 衣裝', boosts: { gaming: 5, default: 1 } },
+        'Casual': { label: '👕 普段着 (便裝)', boosts: { gaming: 3, default: 1 } },
+        'Kimono': { label: '👘 和装 (和服)', boosts: { knowledge: 5, default: 1 } },
+        'Summer': { label: '☀️ 夏服', boosts: { performance: 5, default: 1 } },
+        'Date': { label: '💖 約會服 (デート服)', boosts: { knowledge: 3, adaptation: 3, default: 1 } },
+        'Private': { label: '💤 OFF服', boosts: { adaptation: 5, default: 1 } },
+    };
+
+    // Game State
+    let gameState = {
+        currentPet: {
+            day: 1,
+            timeSlotIndex: 0,
+            satiety: MAX_SATIETY,
+            stats: { beauty: 0, performance: 0, gaming: 0, knowledge: 0, adaptation: 0 },
+            clothing: 'Suit',
+            isDonut: false,
+            starveDays: 0,
+        },
+        exileCount: 0,
+        isGameRunning: true,
+        // Firebase specific
+        db: null,
+        userId: null,
+        appId: null,
+        isAuthReady: false,
+        COLLECTION_PATH: ''
+    };
+
+
+    // --- Firebase/Firestore Logic ---
+
+    // Function to construct the document reference
+    const getDocRef = () => {
+        const { db, appId, userId } = gameState;
+        if (!db || !userId) return null;
+        // doc, which was imported at the top of this script, is now available
+        const COLLECTION_PATH = `artifacts/${appId}/users/${userId}/vtuber_pet_simulator`;
+        return doc(db, COLLECTION_PATH, 'user_data');
+    };
+
+    // Load initial game state (including exile count) from Firestore
+    window.loadGameState = () => {
+        gameState.db = window.db;
+        gameState.userId = window.userId;
+        gameState.appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        gameState.isAuthReady = window.isAuthReady;
+
+        if (!gameState.isAuthReady) {
+            console.warn("Auth not ready. Deferring game load.");
+            return;
+        }
+
+        const docRef = getDocRef();
+
+        // Use onSnapshot for real-time updates (primarily for the exile count)
+        if (docRef) {
+            onSnapshot(docRef, (doc) => {
+                if (doc.exists()) {
+                    const data = doc.data();
+                    gameState.exileCount = data.exileCount || 0;
+                    // Only load the pet state if we are starting a new pet and there's a saved one
+                    // For this simple demo, we prioritize the exile count persistence.
+                }
+                updateUI();
+                console.log("Firestore Data Loaded/Updated.");
+            }, (error) => {
+                console.error("Firestore snapshot error:", error);
+            });
+        }
+        
+        // Ensure the UI is ready to interact (even if data is 0)
+        document.getElementById('exile-button').disabled = false;
+        initGame();
+    };
+
+    // Save exile count to Firestore
+    const saveExileCount = async () => {
+        const docRef = getDocRef();
+        if (docRef) {
+            try {
+                // Only save the exile count for persistence
+                await setDoc(docRef, { exileCount: gameState.exileCount }, { merge: true });
+                console.log("Exile count saved successfully.");
+            } catch (e) {
+                console.error("Error saving document:", e);
+                showModal('❌ 數據保存錯誤', `無法將流放次數保存至雲端。錯誤：${e.message}`);
+            }
+        }
+    };
+
+    // --- Core Game Logic ---
+
+    const initGame = () => {
+        populateClothingSelect();
+        updateUI();
+        setPetDialogue(DIALOGUE.new_day[0]);
+        document.getElementById('exile-button').disabled = true;
+    };
+
+    const populateClothingSelect = () => {
+        const select = document.getElementById('clothing-select');
+        select.innerHTML = '';
+        for (const [key, config] of Object.entries(CLOTHING_CONFIG)) {
+            const option = document.createElement('option');
+            option.value = key;
+            option.textContent = config.label;
+            select.appendChild(option);
+        }
+        select.value = gameState.currentPet.clothing;
+    };
+
+    const changeClothing = (newClothing) => {
+        gameState.currentPet.clothing = newClothing;
+        updateUI();
+        setPetDialogue(`換上了 ${CLOTHING_CONFIG[newClothing].label}！感覺更有動力了！`);
+    };
+
+    const performAction = (actionKey) => {
+        if (!gameState.isGameRunning) return;
+
+        const pet = gameState.currentPet;
+        const clothingBoosts = CLOTHING_CONFIG[pet.clothing].boosts;
+        
+        // Stat Increase: Base 1-3 + Clothing Boost
+        let statGain = Math.floor(Math.random() * 3) + 1;
+        
+        if (actionKey === 'feed') {
+            pet.satiety = Math.min(MAX_SATIETY, pet.satiety + 25); // Feed restores 25
+            pet.starveDays = 0; // Reset donut countdown
+            setPetDialogue(getRandomDialogue('feed'));
+        } else {
+            // Apply clothing boost for specific action
+            const primaryStat = getStatFromAction(actionKey);
+            const boostValue = clothingBoosts[primaryStat] || clothingBoosts.default || 1;
+            statGain += boostValue;
+
+            pet.stats[primaryStat] += statGain;
+            pet.satiety = Math.max(0, pet.satiety - 10); // Non-feed action costs 10 Satiety
+            setPetDialogue(getRandomDialogue(actionKey) + ` (+${statGain} ${primaryStat === 'beauty' ? '美貌' : primaryStat}!)`);
+
+            // Check for ending condition after 9 days (27 actions) for a short demo
+            if (pet.day >= 9 && pet.timeSlotIndex === TIME_SLOTS.length - 1) {
+                endGame();
+                return;
+            }
+        }
+
+        // Advance to next time slot
+        nextTimeSlot();
+    };
+
+    const nextTimeSlot = () => {
+        if (!gameState.isGameRunning) return;
+
+        const pet = gameState.currentPet;
+        pet.timeSlotIndex++;
+        
+        if (pet.timeSlotIndex >= TIME_SLOTS.length) {
+            // All slots used, move to next day
+            nextDay();
+        } else {
+            // Check Satiety status for dialogue hint
+            if (pet.satiety < 30 && pet.satiety > 0) {
+                setPetDialogue(getRandomDialogue('low_satiety'));
+            } else if (pet.satiety === 0) {
+                setPetDialogue(getRandomDialogue('starving'));
+            } else {
+                setPetDialogue(DIALOGUE.new_day[pet.timeSlotIndex % 3]);
+            }
+        }
+        
+        updateUI();
+    };
+
+    window.nextDay = () => {
+        if (!gameState.isGameRunning) return;
+        
+        const pet = gameState.currentPet;
+        
+        pet.day++;
+        pet.timeSlotIndex = 0;
+
+        // --- Donut Transformation Logic ---
+        if (pet.satiety === 0) {
+            pet.starveDays++;
+            if (pet.starveDays >= MAX_DAYS_TO_DONUT && !pet.isDonut) {
+                pet.isDonut = true;
+                showModal('🍩 異變發生！', `您的Fuwa因為連續 ${MAX_DAYS_TO_DONUT} 天飽足度為 0，已經異變成可愛的「ふわっちクルーラー」（甜甜圈吉祥物）了！`);
+                setPetDialogue(DIALOGUE.donut[0]);
+            }
+        } else if (pet.satiety < 0) { // Safety check, shouldn't happen with Math.max(0)
+             pet.satiety = 0;
+             pet.starveDays++;
+        }
+        
+        // Natural Satiety decay at the end of the day
+        pet.satiety = Math.max(0, pet.satiety - 15);
+        
+        setPetDialogue(getRandomDialogue('new_day'));
+        updateUI();
+    };
+    
+    // Check if pet is ready for a 'natural' ending
+    const endGame = () => {
+        gameState.isGameRunning = false;
+        document.getElementById('exile-button').disabled = false;
+        
+        const pet = gameState.currentPet;
+        let success = false;
+        let outcome = '平庸的偶像';
+        
+        // Simple success condition: At least two stats over 100
+        const highStats = STAT_NAMES.filter(s => pet.stats[s] > 100).length;
+        if (highStats >= 2) {
+            success = true;
+            outcome = '頂級偶像 (Top Idol)';
+        } else if (pet.isDonut) {
+            outcome = '甜甜圈吉祥物 (Sweetener)';
+        } else {
+            outcome = '平凡的打工人 (Average Worker)';
+        }
+
+        const title = success ? `🌟 養成成功！ (${outcome})` : `📉 養成失敗 (${outcome})`;
+        const message = success ? 
+            `經過 ${pet.day} 天的努力，你的Fuwa成功進化成【${outcome}】！現在你可以選擇將其「留下」或「流放」來收集圖鑑！` :
+            `很遺憾，這一次的養成結果是【${outcome}】。請將它流放至宇宙，開啟下一輪養成吧！`;
+
+        showModal(title, message);
+    };
+
+
+    window.exilePet = () => {
+        if (gameState.isGameRunning) return; // Only allow exile after the run ends
+
+        gameState.exileCount++;
+        saveExileCount(); // Save the new count to Firestore
+
+        showModal('🚀 流放成功！', `${gameState.currentPet.isDonut ? '甜甜圈' : 'Fuwa'} 被流放到宇宙漂浮區了！流放總數：${gameState.exileCount} 隻。`);
+        
+        // Reset game state for a new run
+        gameState.currentPet = {
+            day: 1,
+            timeSlotIndex: 0,
+            satiety: MAX_SATIETY,
+            stats: { beauty: 0, performance: 0, gaming: 0, knowledge: 0, adaptation: 0 },
+            clothing: 'Suit',
+            isDonut: false,
+            starveDays: 0,
+        };
+        gameState.isGameRunning = true;
+        document.getElementById('exile-button').disabled = true;
+        
+        initGame();
+    };
+
+    // --- UI Update & Utility ---
+
+    const updateUI = () => {
+        const pet = gameState.currentPet;
+        
+        // 1. Time Slot & Day
+        document.getElementById('current-time-slot').textContent = `📅 Day ${pet.day} | 🕛 ${TIME_SLOTS[pet.timeSlotIndex]}`;
+
+        // 2. Stats
+        document.getElementById('stat-satiety').textContent = `${pet.satiety}%`;
+        for (const stat of STAT_NAMES) {
+            document.getElementById(`stat-${stat}`).textContent = pet.stats[stat];
+        }
+
+        // 3. Avatar
+        const avatar = pet.isDonut ? '🍩' : '🥂'; // Use a glass/cheers emoji for standard Fuwa
+        document.getElementById('pet-avatar').textContent = avatar;
+
+        // 4. Donut Countdown
+        const donutCountdownEl = document.getElementById('donut-countdown');
+        if (pet.satiety === 0 && !pet.isDonut) {
+            donutCountdownEl.textContent = `🍩 異變倒數: ${MAX_DAYS_TO_DONUT - pet.starveDays} 天`;
+            donutCountdownEl.classList.remove('hidden');
+        } else {
+            donutCountdownEl.classList.add('hidden');
+        }
+
+        // 5. Action Buttons (Rebuild to include feeding)
+        const actionContainer = document.getElementById('action-buttons');
+        actionContainer.innerHTML = '';
+        const actions = {
+            wash: { label: '🛀 洗澡', stat: 'beauty' },
+            exercise: { label: '🏋️ 運動', stat: 'performance' },
+            game: { label: '🕹️ 打遊戲', stat: 'gaming' },
+            study: { label: '📚 讀書', stat: 'knowledge' },
+            sleep: { label: '😴 睡覺', stat: 'adaptation' },
+        };
+        
+        // Add Feed Button first
+        const feedButton = createActionButton('餵食', 'feed', 'bg-yellow-500');
+        actionContainer.appendChild(feedButton);
+
+        for (const [key, { label, stat }] of Object.entries(actions)) {
+            const clothingBoosts = CLOTHING_CONFIG[pet.clothing].boosts;
+            const boostValue = clothingBoosts[stat] || clothingBoosts.default || 1;
+            const color = boostValue >= 3 ? 'bg-purple-500' : 'bg-gray-500'; // Highlight boosted action
+            
+            const button = createActionButton(label, key, color, `(${boostValue}x)`);
+            actionContainer.appendChild(button);
+        }
+        
+        // Disable actions if game over
+        const isActionDisabled = !gameState.isGameRunning || pet.isDonut;
+        Array.from(actionContainer.querySelectorAll('button')).forEach(btn => btn.disabled = isActionDisabled);
+        document.getElementById('next-time-button').disabled = !gameState.isGameRunning;
+        
+        // 6. Exile Count
+        document.getElementById('exile-count').textContent = gameState.exileCount;
+    };
+
+    const createActionButton = (label, key, color, boostText = '') => {
+        const button = document.createElement('button');
+        button.className = `retro-button ${color} hover:opacity-80 text-white px-2 py-2 rounded-md text-xs whitespace-nowrap`;
+        button.onclick = () => performAction(key);
+        button.innerHTML = `${label} <span class="text-xs font-bold">${boostText}</span>`;
+        return button;
+    };
+
+    const getStatFromAction = (action) => {
+        switch (action) {
+            case 'wash': return 'beauty';
+            case 'exercise': return 'performance';
+            case 'game': return 'gaming';
+            case 'study': return 'knowledge';
+            case 'sleep': return 'adaptation';
+            default: return 'beauty';
+        }
+    };
+
+    const getRandomDialogue = (key) => {
+        const list = DIALOGUE[key];
+        return list[Math.floor(Math.random() * list.length)];
+    };
+
+    // --- Modal Handler (Custom replacement for alert/confirm) ---
+
+    const modalEl = document.getElementById('modal');
+    const modalTitleEl = document.getElementById('modal-title');
+    const modalMessageEl = document.getElementById('modal-message');
+    
+    const showModal = (title, message) => {
+        modalTitleEl.textContent = title;
+        modalMessageEl.textContent = message;
+        modalEl.classList.remove('hidden');
+        modalEl.classList.add('flex');
+    };
+
+    window.closeModal = () => {
+        modalEl.classList.add('hidden');
+        modalEl.classList.remove('flex');
+    };
+    
+    const setPetDialogue = (message) => {
+        document.getElementById('pet-dialogue').textContent = message;
+    }
+
+    // Initialize Game UI after script load (Firebase auth will trigger loadGameState)
+    window.onload = () => {
+        // Since all logic is now in one module, no need for complex setup here,
+        // window.firebaseInit is called above and handles loadGameState.
+    };
+
+</script>
+
+</body>
+</html>
